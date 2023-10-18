@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.daimhim.im.core">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application>
+        <service
+                android:name=".FrogServiceNative"
+                android:process=":frog"
+                android:exported="true">
+            <intent-filter>
+                <action android:name="org.daimhim.im.core.frog"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
