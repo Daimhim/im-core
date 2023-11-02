@@ -20,9 +20,9 @@ class MainViewModel : ViewModel() {
     private val _onMessage = MutableSharedFlow<MainItem>()
     val onMessage : SharedFlow<MainItem> =_onMessage
 
-    val token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJzdWIiOiIxMTk5MjQ0MzIxMjU0MTUwMTQ0Iiwic2NvcGUiOiJkZWZhdWx0IiwiaXNzIjoiMTMwODg5NTYxMTIiLCJsb2dpbiI6MTY5MDUyNTI3M30.SVbpqPluVnAoFf_tauafCabh-RfTcXslFD_C95aOKBDfoMM_yOBM16L6Y17q0EpL-eBZc6oi0RQWpAQUYKVbgdboEq3ZFItAMSEphJENcLLKgyy8PVw5cIlNapa9Eq3-wArZHI2qc3ICsR6_FJqH5rEnir6jqXPEqJMdhPvoDkg"
-    val imAccount = "202206211949282"
-    val base_url = "wss://client.qgbtech.cn/ws:90?token=%s&name=%s&platform=android"
+    val token = ""
+    val imAccount = ""
+    val base_url = ""
 
 
     private var iEngine = AndroidIEngine()
