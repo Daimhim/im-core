@@ -1,13 +1,13 @@
 package org.daimhim.im.core;
 
 interface RemoteV2IMCListener {
-    void onMessageByte(
+    boolean onMessageByte(
         String md5,
         int index,
         int length,
         in byte[] data
     );
-    void onMessageString(
+    boolean onMessageString(
         String md5,
         int index,
         int length,

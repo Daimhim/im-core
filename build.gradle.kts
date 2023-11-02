@@ -1,8 +1,13 @@
 group = "org.daimhim.im.core"
 version = "1.0-SNAPSHOT"
-
+buildscript {
+    repositories {
+        mavenLocal()
+    }
+}
 allprojects {
     repositories {
+        mavenLocal()
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")

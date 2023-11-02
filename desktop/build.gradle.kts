@@ -18,9 +18,9 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("com.google.code.gson:gson:2.10.1")
-                implementation("com.github.Daimhim:imc-core:1.0.3")
                 implementation("com.squareup.okhttp3:okhttp:4.9.0")
-                implementation("com.github.Daimhim.timber-multiple-platforms:timber:1.0.5")
+                implementation("com.github.Daimhim:imc-core:1.0.5")
+                implementation("com.github.Daimhim.timber-multiple-platforms:timber:1.0.6.2")
                 implementation(project(":im-core"))
                 implementation(compose.desktop.currentOs)
             }

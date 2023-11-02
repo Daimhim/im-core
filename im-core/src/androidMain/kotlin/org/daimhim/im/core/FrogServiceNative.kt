@@ -2,108 +2,53 @@ package org.daimhim.im.core
 
 import android.app.Service
 import android.content.Intent
+import android.os.Bundle
 import android.os.IBinder
 import android.os.RemoteException
-import okio.ByteString.Companion.toByteString
-import org.daimhim.container.ContextHelper
-import org.daimhim.imc_core.IEngine
-import org.daimhim.imc_core.IEngineState
-import org.daimhim.imc_core.WebSocketEngine
-import timber.multiplatform.log.Timber
+import android.util.ArrayMap
+import org.daimhim.imc_core.*
 
 class FrogServiceNative : Service() {
-    companion object {
-        internal var fsnConfig: FSNConfig? = null
 
-        @JvmStatic
-        fun setFSNConfig(config: FSNConfig) {
-            fsnConfig = config
-        }
-    }
 
     private lateinit var iEngine: IEngine
 
     override fun onCreate() {
         super.onCreate()
-        if (!this::iEngine.isInitialized){
-            iEngine = WebSocketEngine
-                .Builder()
-                .let {
-                    fsnConfig?.crate(it)?:it
-                }
-                .build()
-            fsnConfig?.bindEngine(iEngine as WebSocketEngine)
-        }
-        try {
-            val token = fsnConfig?.getToken() ?: return
-            val imAccount = fsnConfig?.getImAccount() ?: return
-            frogServiceIBinder.setAccountInfo(token, imAccount)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Timber.e(e)
-        }
+        iEngine = OkhttpIEngine
+            .Builder()
+            .let {
+                FSNConfig.fsnConfig?.crate(it) ?: it
+            }
+            .build()
+        FSNConfig
+            .fsnConfig
+            ?.bindEngine(iEngine as OkhttpIEngine)
     }
 
     override fun onBind(intent: Intent?): IBinder {
         return frogServiceIBinder
     }
 
+
+
     private val frogServiceIBinder = object : FrogService.Stub() {
-        private val imcListenerManager = mutableMapOf<RemoteV2IMCListener, NativeV2IMCListener>()
-        override fun addIMCListener(listener: RemoteV2IMCListener?) {
-            Timber.i("addIMCListener ${listener} ${ContextHelper.getProcessName()} ${ContextHelper.isMainProcess()}")
-            listener ?: throw NullPointerException("addIMCListener(valueCallBack)")
-            val mergeForward = imcListenerManager[listener] ?: NativeV2IMCListener(listener)
+        override fun engineOn(key: String?) {
             iEngine
-                .addIMCListener(mergeForward)
-            imcListenerManager[listener] = mergeForward
+                .engineOn(key ?: throw RemoteException("key 不可为空"))
         }
 
-        override fun removeIMCListener(listener: RemoteV2IMCListener?) {
+        override fun engineOff() {
             iEngine
-                .removeIMCListener(imcListenerManager[listener] ?: return)
-            imcListenerManager.remove(listener)
+                .engineOff()
         }
 
-        override fun setIMCStatusListener(listener: RemoteIMCStatusListener?) {
-            if (listener == null) {
-                iEngine
-                    .setIMCStatusListener(null)
-                return
-            }
-            val nativeIMCStatusListener = NativeIMCStatusListener(listener)
-            when (
-                iEngine
-                    .engineState()) {
-                IEngineState.ENGINE_OPEN -> {
-                    nativeIMCStatusListener.connectionSucceeded()
-                }
-
-                IEngineState.ENGINE_CLOSED -> {
-                    nativeIMCStatusListener.connectionClosed()
-                }
-
-                else -> {
-                    nativeIMCStatusListener.connectionLost(RemoteException("状态恢复"))
-                    //无操作
-                }
-            }
-            iEngine
-                .setIMCStatusListener(nativeIMCStatusListener)
-        }
-
-        override fun setAccountInfo(token: String, imAccount: String) {
-            iEngine.engineOn(
-                fsnConfig?.getBaseWs(token, imAccount)
-                    ?.also {
-                        Timber.i("setAccountInfo(${it})")
-                    }
-                    ?: throw IllegalStateException("BaseWs 不能为空")
-            )
+        override fun engineState(): Int {
+            return iEngine.engineState()
         }
 
         override fun makeConnection() {
-            // nothing to do
+
         }
 
         override fun onChangeMode(mode: Int) {
@@ -114,28 +59,125 @@ class FrogServiceNative : Service() {
             iEngine.onNetworkChange(mode)
         }
 
+        override fun setSharedParameters(parameters: MutableMap<String, String>?) {
+            FSNConfig.setSharedParameters(parameters ?: mutableMapOf())
+        }
+
         override fun sendByte(md5: String?, index: Int, length: Int, data: ByteArray): Boolean {
             var isSuccess = false
-            BigDataSplitUtil.dataAssemblyByte(md5, index, length, data) {
-                isSuccess = iEngine.send(it.toByteString())
-            }
+            BigDataSplitUtil
+                .dataAssemblyByte(md5, index, length, data) {
+                    isSuccess = iEngine.send(it)
+                }
             return isSuccess
         }
 
         override fun sendString(md5: String?, index: Int, length: Int, data: ByteArray): Boolean {
             var isSuccess = false
-            BigDataSplitUtil.dataAssemblyStr(md5, index, length, data) {
-                isSuccess = iEngine.send(it)
-            }
+            BigDataSplitUtil
+                .dataAssemblyStr(md5, index, length, data) {
+                    isSuccess = iEngine.send(it)
+                }
             return isSuccess
         }
 
-        override fun engineState(): Int {
-            return iEngine.engineState()
+        private val imcListeners = ArrayMap<RemoteV2IMCListener, V2IMCListener>()
+        override fun addIMCListener(listener: RemoteV2IMCListener?) {
+            if (imcListeners.containsKey(listener)) {
+                return
+            }
+            val imcListener = object : V2IMCListener {
+                override fun onMessage(byteArray: ByteArray) {
+                    BigDataSplitUtil.dataSplitting(byteArray) { p0, p1, p2, p3 ->
+                        listener?.onMessageByte(p0, p1, p2, p3)
+                    }
+                }
+
+                override fun onMessage(text: String) {
+                    BigDataSplitUtil.dataSplitting(text) { p0, p1, p2, p3 ->
+                        listener?.onMessageString(p0, p1, p2, p3)
+                    }
+                }
+            }
+            iEngine.addIMCListener(imcListener)
+            imcListeners.put(listener, imcListener)
+        }
+        override fun removeIMCListener(listener: RemoteV2IMCListener?) {
+            if (!imcListeners.containsKey(listener)) {
+                return
+            }
+            val iterator = imcListeners.iterator()
+            var next: MutableMap.MutableEntry<RemoteV2IMCListener, V2IMCListener>
+            while (iterator.hasNext()) {
+                next = iterator.next()
+                if (next.value == listener) {
+                    iEngine.removeIMCListener(next.value)
+                    iterator.remove()
+                }
+            }
         }
 
-        override fun loginOut() {
-            iEngine.engineOff()
+        private val imcSocketListeners = ArrayMap<RemoteV2IMCListener, V2IMCSocketListener>()
+
+        override fun addIMCSocketListener(level: Int, listener: RemoteV2IMCListener?) {
+            if (imcSocketListeners.containsKey(listener)) {
+                return
+            }
+            val imcSocketListener = object : V2IMCSocketListener {
+                override fun onMessage(iEngine: IEngine, bytes: ByteArray): Boolean {
+                    var isSuccess = false
+                    BigDataSplitUtil.dataSplitting(bytes) { p0, p1, p2, p3 ->
+                        isSuccess = listener?.onMessageByte(p0, p1, p2, p3) ?: false
+                    }
+                    return isSuccess
+                }
+
+                override fun onMessage(iEngine: IEngine, text: String): Boolean {
+                    var isSuccess = false
+                    BigDataSplitUtil.dataSplitting(text) { p0, p1, p2, p3 ->
+                        isSuccess = listener?.onMessageString(p0, p1, p2, p3) ?: false
+                    }
+                    return isSuccess
+                }
+            }
+            iEngine.addIMCSocketListener(level, imcSocketListener)
+            imcSocketListeners.put(listener, imcSocketListener)
+        }
+
+        override fun removeIMCSocketListener(listener: RemoteV2IMCListener?) {
+            if (!imcSocketListeners.containsKey(listener)) {
+                return
+            }
+            val iterator = imcSocketListeners.iterator()
+            var next: MutableMap.MutableEntry<RemoteV2IMCListener, V2IMCSocketListener>
+            while (iterator.hasNext()) {
+                next = iterator.next()
+                if (next.value == listener) {
+                    iEngine.removeIMCSocketListener(next.value)
+                    iterator.remove()
+                }
+            }
+        }
+
+        override fun setIMCStatusListener(listener: RemoteIMCStatusListener?) {
+            if (listener == null) {
+                iEngine.setIMCStatusListener(null)
+                return
+            }
+            iEngine.setIMCStatusListener(object : IMCStatusListener {
+                override fun connectionClosed() {
+                    listener.connectionClosed()
+                }
+
+                override fun connectionLost(throwable: Throwable) {
+                    listener.connectionLost(Bundle())
+                }
+
+                override fun connectionSucceeded() {
+                    listener.connectionSucceeded()
+                }
+
+            })
         }
 
     }

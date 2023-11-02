@@ -1,7 +1,6 @@
 package org.daimhim.im.core
 
 import okio.ByteString
-import okio.ByteString.Companion.toByteString
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
@@ -24,5 +23,7 @@ object GZipUtil {
         .readBytes()
 
     fun ByteString.unGzipToString(): String = GZIPInputStream(toByteArray().inputStream())
+        .bufferedReader(Charsets.UTF_8).use { it.readText() }
+    fun ByteArray.unGzipToString(): String = GZIPInputStream(inputStream())
         .bufferedReader(Charsets.UTF_8).use { it.readText() }
 }

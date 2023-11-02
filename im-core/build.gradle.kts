@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "org.daimhim.im.core"
-version = "1.2.5-SNAPSHOT"
+version = "1.3.1-SNAPSHOT"
 
 kotlin {
     android(){
@@ -20,9 +20,9 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 compileOnly("com.google.code.gson:gson:2.10.1")
-                compileOnly("com.github.Daimhim:imc-core:1.0.3")
+                compileOnly("com.github.Daimhim:imc-core:1.0.5")
                 compileOnly("com.squareup.okhttp3:okhttp:4.9.0")
-                compileOnly("com.github.Daimhim.timber-multiple-platforms:timber:1.0.5")
+                compileOnly("com.github.Daimhim.timber-multiple-platforms:timber:1.0.6.2")
                 compileOnly("com.github.Daimhim:ContextHelper:1.0.3")
             }
         }
