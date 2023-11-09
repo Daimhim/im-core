@@ -227,7 +227,9 @@ class AndroidIEngine : IEngine {
                 Timber.i("onServiceDisconnected ${Thread.currentThread().name}")
                 androidIEngine.frogService = null
             } finally {
-                androidIEngine.aWait.notify()
+                synchronized(androidIEngine.aWait){
+                    androidIEngine.aWait.notify()
+                }
             }
         }
     }

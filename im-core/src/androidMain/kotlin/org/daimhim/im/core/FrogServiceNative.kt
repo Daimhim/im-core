@@ -48,7 +48,7 @@ class FrogServiceNative : Service() {
         }
 
         override fun makeConnection() {
-
+            iEngine.onNetworkChange(-1)
         }
 
         override fun onChangeMode(mode: Int) {
