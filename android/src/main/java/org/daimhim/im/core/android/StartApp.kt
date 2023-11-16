@@ -17,25 +17,27 @@ class StartApp : Application() {
         super.onCreate()
         Timber.plant(DebugTree())
         ContextHelper.init(this)
-        NetworkMonitorManager.getInstance().init(this)
-        registerActivityLifecycleCallbacks(FullLifecycleHandler())
-        FSNConfig.setFSNConfig(object : FSNConfig {
-
-            override fun crate(builder: OkhttpIEngine.Builder): OkhttpIEngine.Builder {
-                return builder
-                    .customHeartbeat(QGBHeartbeat())
+        val processName = ContextHelper.getProcessName()
+        Timber.i("processName:${processName}")
+        when(processName){
+            "main"->{
+                NetworkMonitorManager.getInstance().init(this)
+                registerActivityLifecycleCallbacks(FullLifecycleHandler())
             }
+            "frog"->{
+                FSNConfig.setFSNConfig(object : FSNConfig {
 
-            override fun bindEngine(webSocketEngine: OkhttpIEngine) {
-//                webSocketEngine.addIMCListener()
+                    override fun crate(builder: OkhttpIEngine.Builder): OkhttpIEngine.Builder {
+                        return builder
+                            .customHeartbeat(QGBHeartbeat())
+                    }
+
+                    override fun bindEngine(webSocketEngine: OkhttpIEngine) {
+
+                    }
+                })
             }
-        })
-        FSNConfig.setSharedParameters(
-            mutableMapOf(
-                "token" to "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJzdWIiOiIxMTk5MjQ0MzIxMjU0MTUwMTQ0Iiwic2NvcGUiOiJkZWZhdWx0IiwiaXNzIjoiMTMwODg5NTYxMTIiLCJsb2dpbiI6MTY5MDUyNTI3M30.SVbpqPluVnAoFf_tauafCabh-RfTcXslFD_C95aOKBDfoMM_yOBM16L6Y17q0EpL-eBZc6oi0RQWpAQUYKVbgdboEq3ZFItAMSEphJENcLLKgyy8PVw5cIlNapa9Eq3-wArZHI2qc3ICsR6_FJqH5rEnir6jqXPEqJMdhPvoDkg",
-                "imAccount" to "202206211949282"
-            )
-        )
+        }
     }
 
 }

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "org.daimhim.im.core"
-version = "1.0-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 
 repositories {
     jcenter()
@@ -17,7 +17,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.5.0")
     implementation("androidx.appcompat:appcompat:1.4.1")
     implementation("com.google.android.material:material:1.5.0")
-    implementation("com.github.Daimhim:imc-core:1.0.5")
+    implementation("com.github.Daimhim:imc-core:1.0.6")
     implementation("com.squareup.okhttp3:okhttp:4.9.0")
     implementation("com.github.Daimhim.timber-multiple-platforms:timber:1.0.6.2")
     implementation ("androidx.fragment:fragment-ktx:1.5.7")

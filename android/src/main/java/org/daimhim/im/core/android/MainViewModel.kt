@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.daimhim.im.core.AndroidIEngine
+import org.daimhim.im.core.FSNConfig
 import org.daimhim.imc_core.*
 import timber.multiplatform.log.Timber
 
@@ -31,7 +32,14 @@ class MainViewModel : ViewModel() {
         viewModelScope
             .launch(Dispatchers.IO) {
                 try {
-                    iEngine.engineOn(String.format(base_url, token, imAccount))
+                    iEngine
+                        .setSharedParameters(
+                            mutableMapOf(
+                                "token" to "",
+                                "imAccount" to ""
+                            )
+                        )
+                    iEngine.engineOn(base_url)
                     iEngine
                         .setIMCStatusListener(object : IMCStatusListener {
                             override fun connectionClosed() {

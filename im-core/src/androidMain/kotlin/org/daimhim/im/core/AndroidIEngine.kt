@@ -31,6 +31,10 @@ class AndroidIEngine : IEngine {
         return connect()?.engineState()?:IEngineState.ENGINE_CLOSED
     }
 
+    override fun makeConnection() {
+        connect()?.makeConnection()
+    }
+
 
     override fun onChangeMode(mode: Int) {
         connect()
